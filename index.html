@@ -1,12 +1,7 @@
-# ============================================================
-# ⚙️ PowerShell 5 → PowerShell 7 Bootstrap Loader (Single Admin Elevation)
-# ============================================================
-
-# --- Step 0 : Ensure Administrator ---
 $currUser = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($currUser)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "🔐 Restarting script with Administrator rights..."
+    Write-Host "Restarting script with Administrator rights..."
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = "powershell.exe"
     $psi.Arguments = "-ExecutionPolicy Bypass -NoProfile -Command `"irm 'https://cwlxxx.github.io/xxx' | iex`""
@@ -15,60 +10,54 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     exit
 }
 
-# --- Step 1 : Check and Install Winget if Missing ---
-Write-Host "🔍 Checking for Winget..."
+Write-Host "Checking for Winget..."
 if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Winget not found. Attempting to install..."
+    Write-Host "Winget not found. Attempting to install..."
 
     $wingetUrl = "https://aka.ms/getwinget"
     $wingetInstaller = "$env:TEMP\AppInstaller.appxbundle"
 
     try {
-        Write-Host "⬇️ Downloading Winget from $wingetUrl ..."
+        Write-Host "Downloading Winget from $wingetUrl ..."
         Start-BitsTransfer -Source $wingetUrl -Destination $wingetInstaller -DisplayName "Downloading Winget"
     } catch {
-        Write-Host "❌ Failed to download Winget. Check your internet connection."
+        Write-Host "Failed to download Winget. Check your internet connection."
         exit 1
     }
 
-    Write-Host "⚙️ Launching Winget installer window..."
+    Write-Host "Launching Winget installer window..."
     $process = Start-Process -FilePath $wingetInstaller -PassThru
 
-    Write-Host "⏳ Waiting for installer to finish..."
+    Write-Host "Waiting for installer to finish..."
     Wait-Process -Id $process.Id
 
     Start-Sleep -Seconds 2
 
     if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-        Write-Host "❌ Winget still not detected after installation."
+        Write-Host "Winget still not detected after installation."
         exit 1
     }
 
-    Write-Host "✅ Winget installed successfully!"
+    Write-Host "Winget installed successfully!"
 }
 else {
-    Write-Host "✅ Winget is already installed."
+    Write-Host "Winget is already installed."
 }
 
-
-
-# --- Step 2 : Check for PowerShell 7 ---
-Write-Host "🔍 Checking for PowerShell 7..."
+Write-Host "Checking for PowerShell 7..."
 $pwshPath = (Get-Command pwsh.exe -ErrorAction SilentlyContinue).Source
 
 if (-not $pwshPath) {
-    Write-Host "⚙️ PowerShell 7 not found. Installing (visible, non-interactive)..."
+    Write-Host "PowerShell 7 not found. Installing (visible, non-interactive)..."
 
     if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-        Write-Host "❌ Winget not found. Please install it manually from Microsoft Store."
+        Write-Host "Winget not found. Please install it manually from Microsoft Store."
         exit 1
     }
 
-    # Run winget install inline (same admin shell, no new window)
     winget install --id Microsoft.PowerShell --source winget --accept-package-agreements --accept-source-agreements
 
-    # Locate PowerShell 7 after install
-    Write-Host "🔁 Searching for pwsh.exe..."
+    Write-Host "Searching for pwsh.exe..."
     $possiblePaths = @(
         "$env:ProgramFiles\PowerShell\7\pwsh.exe",
         "$env:ProgramFiles\PowerShell\7-preview\pwsh.exe",
@@ -79,25 +68,22 @@ if (-not $pwshPath) {
     }
 
     if (-not $pwshPath) {
-        Write-Host "❌ PowerShell 7 installation complete but executable not found."
-        Write-Host "➡️ Please restart PowerShell and try again."
+        Write-Host "PowerShell 7 installation complete but executable not found."
+        Write-Host "Please restart PowerShell and try again."
         exit 1
     }
-    Write-Host "✅ PowerShell 7 found at: $pwshPath"
+    Write-Host "PowerShell 7 found at: $pwshPath"
 } else {
-    Write-Host "✅ PowerShell 7 already installed at: $pwshPath"
+    Write-Host "PowerShell 7 already installed at: $pwshPath"
 }
 
-# --- Step 3 : Launch Remote Script Using PowerShell 7 (Already Elevated) ---
 $RemoteScript = 'https://raw.githubusercontent.com/cwlxxx/Advance-Setup-Tools/refs/heads/main/AppStartUp.ps1'
-Write-Host "🚀 Launching remote script with PowerShell 7..."
+Write-Host "Launching remote script with PowerShell 7..."
 Start-Process -FilePath $pwshPath -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm $RemoteScript | iex`""
 
-# --- Step 4 : Exit PowerShell 5 ---
-Write-Host "✅ Done. Closing PowerShell 5..."
+Write-Host "Done. Closing PowerShell 5..."
 Start-Sleep -Seconds 2
 exit
-
 
 
 
