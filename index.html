@@ -11,34 +11,42 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 }
 
 Write-Host "Checking for Winget..."
-if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "Winget not found. Attempting to install..."
 
-    $wingetUrl = "https://aka.ms/getwinget"
-    $wingetInstaller = "$env:TEMP\AppInstaller.appxbundle"
+$winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+
+if (-not $winget) {
+
+    Write-Host "Winget not detected. Installing from bundled package..."
+
+    $wingetUrl = "https://github.com/cwlxxx/Advance-Setup-Tools/releases/download/winget/winget.msixbundle"
+    $wingetFile = "$env:TEMP\winget.msixbundle"
 
     try {
-        Write-Host "Downloading Winget from $wingetUrl ..."
-        Start-BitsTransfer -Source $wingetUrl -Destination $wingetInstaller -DisplayName "Downloading Winget"
-    } catch {
-        Write-Host "Failed to download Winget. Check your internet connection."
-        exit 1
+        Write-Host "Downloading Winget package..."
+        Start-BitsTransfer -Source $wingetUrl -Destination $wingetFile -DisplayName "Downloading Winget"
+    }
+    catch {
+        Write-Host "Download failed. Trying fallback download method..."
+        Invoke-WebRequest -Uri $wingetUrl -OutFile $wingetFile
     }
 
-    Write-Host "Launching Winget installer window..."
-    $process = Start-Process -FilePath $wingetInstaller -PassThru
+    Write-Host "Installing Winget..."
 
-    Write-Host "Waiting for installer to finish..."
+    $process = Start-Process -FilePath "powershell.exe" `
+        -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"Add-AppxPackage -Path '$wingetFile'`"" `
+        -PassThru
+
     Wait-Process -Id $process.Id
 
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 3
 
     if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-        Write-Host "Winget still not detected after installation."
-        exit 1
+        Write-Host "Winget installation may require a restart or user login."
+    }
+    else {
+        Write-Host "Winget installed successfully!"
     }
 
-    Write-Host "Winget installed successfully!"
 }
 else {
     Write-Host "Winget is already installed."
@@ -84,6 +92,7 @@ Start-Process -FilePath $pwshPath -ArgumentList "-NoProfile -ExecutionPolicy Byp
 Write-Host "Done. Closing PowerShell 5..."
 Start-Sleep -Seconds 2
 exit
+
 
 
 
