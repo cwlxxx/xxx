@@ -85,6 +85,66 @@ if (-not $pwshPath) {
     Write-Host "PowerShell 7 already installed at: $pwshPath"
 }
 
+Write-Host "Checking for .NET 10 Desktop Runtime..."
+
+$dotnetInstalled = $false
+
+try {
+
+    $dotnetRuntimes = dotnet --list-runtimes 2>$null
+
+    if ($dotnetRuntimes -match "Microsoft.WindowsDesktop.App 10\.") {
+        $dotnetInstalled = $true
+    }
+
+}
+catch {
+}
+
+if (-not $dotnetInstalled) {
+
+    Write-Host ".NET 10 Desktop Runtime not found."
+    Write-Host "Installing .NET 10 Desktop Runtime..."
+
+    winget install `
+        --id Microsoft.DotNet.DesktopRuntime.10 `
+        --source winget `
+        --accept-package-agreements `
+        --accept-source-agreements
+
+    Write-Host "Waiting for .NET installation..."
+
+    Start-Sleep -Seconds 5
+
+    try {
+
+        $dotnetRuntimes = dotnet --list-runtimes 2>$null
+
+        if ($dotnetRuntimes -match "Microsoft.WindowsDesktop.App 10\.") {
+
+            Write-Host ".NET 10 Desktop Runtime installed successfully!"
+
+        }
+        else {
+
+            Write-Host ".NET installation may require restart."
+
+        }
+
+    }
+    catch {
+
+        Write-Host ".NET installation verification failed."
+
+    }
+
+}
+else {
+
+    Write-Host ".NET 10 Desktop Runtime already installed."
+
+}
+
 $RemoteScript = 'https://raw.githubusercontent.com/cwlxxx/Advance-Setup-Tools/refs/heads/main/AppStartUp.ps1'
 Write-Host "Launching remote script with PowerShell 7..."
 Start-Process -FilePath $pwshPath -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm $RemoteScript | iex`""
